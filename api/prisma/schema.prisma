@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+
+  emailMain String?
+  emailSub  String?
+
+  workers   Worker[]
+  machines  Machine[]
+  worksites WorksiteCompany[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Worker {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  isActive  Boolean  @default(true)
+
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  worksites WorksiteWorker[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model Machine {
+  id        String   @id @default(uuid())
+  name      String
+  serial    String?  @unique
+  isActive  Boolean  @default(true)
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  worksites WorksiteMachine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model Worksite {
+  id        String   @id @default(uuid())
+  name      String
+  location  String?
+  isActive  Boolean  @default(true)
+
+  startsAt  DateTime?
+  endsAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companies WorksiteCompany[]
+  workers   WorksiteWorker[]
+  machines  WorksiteMachine[]
+
+  @@index([isActive])
+}
+
+model WorksiteCompany {
+  id         String   @id @default(uuid())
+  worksiteId String
+  companyId  String
+
+  isActive   Boolean  @default(true)
+  joinedAt   DateTime @default(now())
+  leftAt     DateTime?
+
+  worksite   Worksite @relation(fields: [worksiteId], references: [id], onDelete: Cascade)
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([worksiteId, companyId])
+  @@index([companyId])
+}
+
+model WorksiteWorker {
+  id         String   @id @default(uuid())
+  worksiteId String
+  workerId   String
+
+  isActive   Boolean  @default(true)
+  joinedAt   DateTime @default(now())
+  leftAt     DateTime?
+
+  worksite   Worksite @relation(fields: [worksiteId], references: [id], onDelete: Cascade)
+  worker     Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@unique([worksiteId, workerId])
+  @@index([workerId])
+}
+
+model WorksiteMachine {
+  id         String   @id @default(uuid())
+  worksiteId String
+  machineId  String
+
+  isActive   Boolean  @default(true)
+  joinedAt   DateTime @default(now())
+  leftAt     DateTime?
+
+  worksite   Worksite @relation(fields: [worksiteId], references: [id], onDelete: Cascade)
+  machine    Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@unique([worksiteId, machineId])
+  @@index([machineId])
+}
