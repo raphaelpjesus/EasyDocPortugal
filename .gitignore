@@ -1,22 +1,23 @@
-# dependencies
-**/node_modules/
+# Node
+node_modules/
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
 
-# build
-**/dist/
-**/build/
+# Env
+.env
+.env.*
 
-# env
-**/.env
+# Prisma
+api/node_modules/.prisma/
+api/prisma/dev.db
 
-# logs
-**/*.log
+# Build
+dist/
+build/
 
-# prisma engines/cache
-**/.prisma/
-**/prisma/.cache/
-
-# OS / editor
+# OS / IDE
 .DS_Store
+Thumbs.db
 .vscode/
-
-api/src/generated/
+.idea/

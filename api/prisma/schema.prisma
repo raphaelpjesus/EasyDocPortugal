@@ -1,3 +1,5 @@
+// api/prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,56 +17,67 @@ model Company {
   emailMain String?
   emailSub  String?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // relations
   workers   Worker[]
   machines  Machine[]
   worksites WorksiteCompany[]
+  documents Document[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@index([isActive])
 }
 
 model Worker {
-  id        String   @id @default(uuid())
-  fullName  String
-  email     String   @unique
-  isActive  Boolean  @default(true)
+  id       String  @id @default(uuid())
+  fullName String
+  email    String  @unique
+  isActive Boolean @default(true)
 
   companyId String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  worksites WorksiteWorker[]
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // relations
+  worksites WorksiteWorker[]
+  documents Document[]
+
   @@index([companyId])
+  @@index([isActive])
 }
 
 model Machine {
-  id        String   @id @default(uuid())
-  name      String
-  serial    String?  @unique
-  isActive  Boolean  @default(true)
+  id       String  @id @default(uuid())
+  name     String
+  serial   String? @unique
+  isActive Boolean @default(true)
 
+  // máquina pertence “primariamente” a uma empresa
   companyId String?
   company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
-
-  worksites WorksiteMachine[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // relations
+  worksites WorksiteMachine[]
+  documents Document[]
+
   @@index([companyId])
+  @@index([isActive])
 }
 
 model Worksite {
-  id        String   @id @default(uuid())
-  name      String
-  location  String?
-  isActive  Boolean  @default(true)
+  id       String  @id @default(uuid())
+  name     String
+  location String?
+  isActive Boolean @default(true)
 
-  startsAt  DateTime?
-  endsAt    DateTime?
+  startsAt DateTime?
+  endsAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,6 +85,7 @@ model Worksite {
   companies WorksiteCompany[]
   workers   WorksiteWorker[]
   machines  WorksiteMachine[]
+  documents WorksiteDocument[]
 
   @@index([isActive])
 }
@@ -81,12 +95,12 @@ model WorksiteCompany {
   worksiteId String
   companyId  String
 
-  isActive   Boolean  @default(true)
-  joinedAt   DateTime @default(now())
-  leftAt     DateTime?
+  isActive Boolean  @default(true)
+  joinedAt DateTime @default(now())
+  leftAt   DateTime?
 
-  worksite   Worksite @relation(fields: [worksiteId], references: [id], onDelete: Cascade)
-  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  worksite Worksite @relation(fields: [worksiteId], references: [id], onDelete: Cascade)
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([worksiteId, companyId])
   @@index([companyId])
@@ -97,12 +111,12 @@ model WorksiteWorker {
   worksiteId String
   workerId   String
 
-  isActive   Boolean  @default(true)
-  joinedAt   DateTime @default(now())
-  leftAt     DateTime?
+  isActive Boolean  @default(true)
+  joinedAt DateTime @default(now())
+  leftAt   DateTime?
 
-  worksite   Worksite @relation(fields: [worksiteId], references: [id], onDelete: Cascade)
-  worker     Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  worksite Worksite @relation(fields: [worksiteId], references: [id], onDelete: Cascade)
+  worker   Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
 
   @@unique([worksiteId, workerId])
   @@index([workerId])
@@ -113,13 +127,89 @@ model WorksiteMachine {
   worksiteId String
   machineId  String
 
-  isActive   Boolean  @default(true)
-  joinedAt   DateTime @default(now())
-  leftAt     DateTime?
+  isActive Boolean  @default(true)
+  joinedAt DateTime @default(now())
+  leftAt   DateTime?
 
-  worksite   Worksite @relation(fields: [worksiteId], references: [id], onDelete: Cascade)
-  machine    Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  worksite Worksite @relation(fields: [worksiteId], references: [id], onDelete: Cascade)
+  machine  Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
 
   @@unique([worksiteId, machineId])
   @@index([machineId])
+}
+
+model WorksiteDocument {
+  id         String   @id @default(uuid())
+  worksiteId String
+  documentId String
+
+  isActive Boolean  @default(true)
+  joinedAt DateTime @default(now())
+  leftAt   DateTime?
+
+  worksite Worksite @relation(fields: [worksiteId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([worksiteId, documentId])
+  @@index([documentId])
+}
+
+enum DocumentOwnerType {
+  COMPANY
+  WORKER
+  MACHINE
+}
+
+enum DocumentStatus {
+  VALID
+  EXPIRING
+  EXPIRED
+  MISSING
+  PENDING_REVIEW
+  REJECTED
+}
+
+model Document {
+  id String @id @default(uuid())
+
+  ownerType DocumentOwnerType
+  companyId String?
+  workerId  String?
+  machineId String?
+
+  title    String
+  docType  String
+  fileKey  String
+  mimeType String?
+  fileSize Int?
+  checksum String?
+
+  issuedAt  DateTime?
+  expiresAt DateTime?
+
+  status DocumentStatus @default(PENDING_REVIEW)
+
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  worker    Worker?  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  machine   Machine? @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  worksites WorksiteDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ===== DEDUPE (DB) =====
+  // Dedupe apenas quando checksum não é NULL
+  // (Postgres permite múltiplos NULL em UNIQUE, então sem checksum não bloqueia).
+  @@unique([ownerType, companyId, docType, checksum], map: "Document_dedupe_company")
+  @@unique([ownerType, workerId, docType, checksum], map: "Document_dedupe_worker")
+  @@unique([ownerType, machineId, docType, checksum], map: "Document_dedupe_machine")
+
+  @@index([ownerType])
+  @@index([companyId])
+  @@index([workerId])
+  @@index([machineId])
+  @@index([docType])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([checksum])
 }

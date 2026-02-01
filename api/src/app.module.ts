@@ -7,6 +7,7 @@ import { CompaniesModule } from './companies/companies.module';
 import { WorkersModule } from './workers/workers.module';
 import { WorksitesModule } from './worksites/worksites.module';
 import { MachinesModule } from './machines/machines.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MachinesModule } from './machines/machines.module';
     WorkersModule,
     WorksitesModule,
     MachinesModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
